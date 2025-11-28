@@ -1,0 +1,667 @@
+import os
+
+# This dictionary contains the relative path (key) and content (value) for every file.
+# Using raw strings (r''') ensures backslashes and special characters are preserved.
+project_files = {
+    # --- VS Code Workspace (New Request) ---
+    "team-builder-xp.code-workspace": r'''{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+        "files.exclude": {
+            "**/.git": true,
+            "**/.DS_Store": true,
+            "**/node_modules": true
+        },
+        "editor.formatOnSave": true
+    }
+}''',
+
+    # --- Public Assets (Fixing the missing Favicon defect) ---
+    "public/favicon.svg": r'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#257aff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+</svg>''',
+
+    "public/robots.txt": r'''User-agent: *
+Allow: /''',
+
+    # --- Configuration & Build ---
+    "package.json": r'''{
+  "name": "team-builder-xp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "lucide-react": "^0.344.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.5",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/react": "^18.3.4",
+    "@types/react-dom": "^18.3.2",
+    "@vitejs/plugin-react-swc": "^3.7.0",
+    "autoprefixer": "^10.4.17",
+    "jsdom": "^27.0.0",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.4",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.1",
+    "vitest": "^1.6.0"
+  }
+}''',
+
+    "vite.config.ts": r'''import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+
+export default defineConfig({
+    plugins: [react()],
+    server: {
+        port: 5173,
+    },
+});''',
+
+    "tsconfig.json": r'''{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}''',
+
+    "tsconfig.node.json": r'''{
+  "compilerOptions": {
+    "composite": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}''',
+
+    # --- Styling ---
+    "tailwind.config.ts": r'''import type { Config } from 'tailwindcss';
+
+const config: Config = {
+    content: ['./index.html', './src/**/*.{ts,tsx,jsx,js}'],
+    theme: {
+        extend: {
+            colors: {
+                brand: {
+                    50: '#ecf8ff',
+                    100: '#d6edff',
+                    200: '#addbff',
+                    300: '#7cc2ff',
+                    400: '#4fa6ff',
+                    500: '#257aff',
+                    600: '#1b5fe6',
+                    700: '#1548b4',
+                    800: '#11378a',
+                    900: '#0f2d6a',
+                },
+            },
+            fontFamily: {
+                sans: ['Inter', 'system-ui', 'sans-serif'],
+                display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+            },
+            boxShadow: {
+                glow: '0 25px 50px -12px rgba(37, 122, 255, 0.35)',
+            },
+        },
+    },
+    plugins: [],
+};
+export default config;''',
+
+    "postcss.config.cjs": r'''module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}''',
+
+    "src/styles/global.css": r'''@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    color-scheme: dark;
+}
+
+@layer base {
+    body {
+        @apply m-0 bg-slate-950 font-sans text-slate-100 antialiased;
+        background-image: radial-gradient(circle at top left, rgba(79, 166, 255, 0.08), transparent 45%),
+            radial-gradient(circle at bottom right, rgba(165, 85, 247, 0.08), transparent 40%);
+    }
+
+    h1, h2, h3 {
+        @apply font-display text-slate-50;
+    }
+}
+
+a {
+    @apply text-brand-300 transition-colors duration-200 ease-out hover:text-brand-200;
+}
+
+.section-container {
+    @apply mx-auto max-w-6xl px-6 py-24 lg:px-8;
+}
+
+.section-eyebrow {
+    @apply text-sm font-semibold uppercase tracking-[0.3em] text-brand-300;
+}
+
+.section-heading {
+    @apply mt-6 max-w-3xl font-display text-4xl font-semibold tracking-tight text-slate-50 sm:text-5xl;
+}
+
+.section-subheading {
+    @apply mt-6 max-w-2xl text-lg text-slate-300;
+}''',
+
+    # --- Deployment & DevOps ---
+    "firebase.json": r'''{
+  "hosting": {
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}''',
+
+    ".firebaserc": r'''{
+  "projects": {
+    "default": "team-builder-xp"
+  }
+}''',
+
+    ".github/workflows/ci-deploy.yml": r'''name: CI & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_TEAM_BUILDER_XP }}"
+          channelId: live
+          projectId: "${{ secrets.FIREBASE_PROJECT_ID }}"
+''',
+
+    ".gitignore": r'''node_modules/
+dist/
+.vite/
+.env
+.env.*
+.firebase/
+.DS_Store
+*.tsbuildinfo''',
+
+    # --- Core Application Code ---
+    "index.html": r'''<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Team Builder XP Corp. - Building Careers. Strengthening Communities." />
+    <title>Team Builder XP Corp.</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>''',
+
+    "src/main.tsx": r'''import './styles/global.css';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>,
+);''',
+
+    "src/App.tsx": r'''import React from 'react';
+import { 
+  Sparkles, 
+  Rocket, 
+  Users, 
+  BookOpen, 
+  Network, 
+  Mail
+} from 'lucide-react';
+
+// --- DATA ---
+const services = [
+  {
+    title: 'Professional Mentorship',
+    summary: 'Bridging the gap between experience and ambition.',
+    bullets: [
+      'Experienced professionals mentor new graduates',
+      'Knowledge transfer of industry best practices',
+      'Career guidance and resume bolstering',
+      'Leadership opportunities for senior members',
+    ],
+    icon: <Users className="h-6 w-6 text-brand-400" />,
+  },
+  {
+    title: 'Skill Acquisition',
+    summary: 'Mastering state-of-the-art technologies and workflows.',
+    bullets: [
+      'Hands-on experience with modern tech stacks',
+      'Real-world project collaboration',
+      'Access to donated industry materials and tools',
+      'Continuous learning environment',
+    ],
+    icon: <BookOpen className="h-6 w-6 text-brand-400" />,
+  },
+  {
+    title: 'Network Expansion',
+    summary: 'Increasing marketability through connection.',
+    bullets: [
+      'Deepen professional relationships',
+      'Connect with engineering organizations',
+      'Increase visibility to potential employers',
+      'Collaborative community events',
+    ],
+    icon: <Network className="h-6 w-6 text-brand-400" />,
+  },
+];
+
+const processSteps = [
+  {
+    index: 1,
+    name: 'Join & Assess',
+    description: 'Unemployed graduates and professionals join our network. We assess current skills and identify mentorship matches.',
+  },
+  {
+    index: 2,
+    name: 'Collaborate & Mentor',
+    description: 'Members form teams. Senior professionals mentor juniors while working on real-world engineering projects.',
+  },
+  {
+    index: 3,
+    name: 'Build & Upskill',
+    description: 'Teams utilize donated time, funds, and materials to build portfolio-worthy projects using modern stacks.',
+  },
+  {
+    index: 4,
+    name: 'Launch Career',
+    description: 'With a bolstered resume, new skills, and a stronger network, members re-enter the workforce as highly marketable candidates.',
+  },
+];
+
+const expertise = [
+  {
+    title: 'Community Impact',
+    items: ['Unemployment Support', 'Career Development', 'Skill Training', 'Mentorship Programs'],
+  },
+  {
+    title: 'Technical Focus',
+    items: ['Software Engineering', 'Project Management', 'System Design', 'Modern Tooling'],
+  },
+  {
+    title: 'Organizational Structure',
+    items: ['Non-Profit (NPO)', 'Volunteer Driven', 'Corporate Partnerships', 'Donation Funded'],
+  },
+  {
+    title: 'Target Audience',
+    items: ['New Graduates', 'Experienced Pros', 'Engineering Leaders', 'Hiring Managers'],
+  },
+];
+
+// --- COMPONENTS ---
+const SectionHeader = ({ eyebrow, title, subtitle, children }: any) => (
+  <div className="space-y-4 text-center">
+    <p className="section-eyebrow">{eyebrow}</p>
+    <h2 className="section-heading">{title}</h2>
+    {subtitle ? <p className="section-subheading mx-auto">{subtitle}</p> : null}
+    {children ? <div className="mx-auto max-w-5xl text-lg text-slate-300">{children}</div> : null}
+  </div>
+);
+
+const HeroSection = () => (
+  <header className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="absolute inset-0">
+      <div className="absolute left-1/2 top-1/2 h-[32rem] w-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-500/20 blur-3xl" />
+      <div className="absolute left-1/4 top-1/4 h-[24rem] w-[24rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-300/10 blur-3xl" />
+    </div>
+    <div className="section-container relative flex min-h-[80vh] flex-col items-center justify-center text-center px-6 py-24">
+      <div className="inline-flex items-center gap-2 rounded-full bg-slate-900/80 px-4 py-2 text-sm font-semibold text-brand-200 ring-1 ring-brand-400/40 backdrop-blur mb-8">
+        <Sparkles className="h-4 w-4" />
+        Building Careers. Strengthening Communities.
+      </div>
+      <h1 className="max-w-4xl font-display text-5xl font-bold tracking-tight text-slate-50 sm:text-7xl">
+        Team Builder XP <span className="text-brand-400">Corp.</span>
+      </h1>
+      <p className="mt-8 max-w-2xl text-balance text-lg text-slate-300 mx-auto">
+        We organize unemployed professionals—both new graduates and industry veterans—to gain experience, master new skills, and build the networks needed to launch their next chapter.
+      </p>
+      <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+        <a className="rounded-full bg-brand-500 px-6 py-3 font-semibold text-white shadow-glow transition hover:bg-brand-400" href="#contact">
+          Join the Mission
+        </a>
+        <a className="rounded-full border border-slate-700 px-6 py-3 font-semibold text-slate-100 transition hover:border-brand-400/70 hover:text-brand-200" href="#mission">
+          Learn more
+        </a>
+      </div>
+      
+      <dl className="mt-16 grid w-full max-w-4xl gap-8 sm:grid-cols-3 mx-auto">
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-900/60 p-6 text-left shadow-xl backdrop-blur-sm">
+          <dt className="text-sm font-semibold uppercase tracking-[0.25em] text-brand-300">Community</dt>
+          <dd className="mt-4 text-3xl font-semibold text-white">Mentorship</dd>
+          <p className="mt-2 text-sm text-slate-400">Veterans guiding graduates to success.</p>
+        </div>
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-900/60 p-6 text-left shadow-xl backdrop-blur-sm">
+          <dt className="text-sm font-semibold uppercase tracking-[0.25em] text-brand-300">Growth</dt>
+          <dd className="mt-4 text-3xl font-semibold text-white">Upskilling</dd>
+          <p className="mt-2 text-sm text-slate-400">Hands-on experience with modern tools.</p>
+        </div>
+        <div className="rounded-3xl border border-slate-800/80 bg-slate-900/60 p-6 text-left shadow-xl backdrop-blur-sm">
+          <dt className="text-sm font-semibold uppercase tracking-[0.25em] text-brand-300">Support</dt>
+          <dd className="mt-4 text-3xl font-semibold text-white">Non-Profit</dd>
+          <p className="mt-2 text-sm text-slate-400">Supported by industry donations & grants.</p>
+        </div>
+      </dl>
+    </div>
+  </header>
+);
+
+const ServicesSection = () => (
+  <section id="mission" className="border-t border-slate-900/60 bg-slate-950 py-24">
+    <div className="section-container">
+      <SectionHeader
+        eyebrow="Our Mission"
+        title="Bolstering resumes through real experience."
+        subtitle="We help our members increase their value as candidates and become more marketable in their job search."
+      />
+      <div className="mt-16 grid gap-10 lg:grid-cols-3">
+        {services.map((service) => (
+          <article
+            key={service.title}
+            className="rounded-3xl border border-slate-800/70 bg-slate-900/70 p-8 shadow-xl transition hover:-translate-y-1 hover:border-brand-400/60 hover:shadow-glow"
+          >
+            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-800/50 ring-1 ring-white/10">
+              {service.icon}
+            </div>
+            <h3 className="text-2xl font-semibold text-slate-50">{service.title}</h3>
+            <p className="mt-4 text-base text-slate-300">{service.summary}</p>
+            <ul className="mt-6 space-y-3 text-sm text-slate-300">
+              {service.bullets.map((bullet) => (
+                <li key={bullet} className="flex items-start gap-3">
+                  <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-400" aria-hidden />
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+const ExpertiseSection = () => (
+  <section className="border-t border-slate-900/60 bg-slate-950/95 py-24">
+    <div className="section-container">
+      <SectionHeader
+        eyebrow="Focus Areas"
+        title="Connecting ambition with opportunity."
+        subtitle="We organize talent to create value, fostering an environment where everyone learns and leads."
+      />
+      <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {expertise.map((group) => (
+          <div key={group.title} className="rounded-2xl border border-slate-800/60 bg-slate-900/70 p-6">
+            <h3 className="text-lg font-semibold text-slate-50">{group.title}</h3>
+            <ul className="mt-4 space-y-2 text-sm text-slate-300">
+              {group.items.map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <span className="h-1.5 w-6 rounded-full bg-brand-400/70" aria-hidden />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+const ProcessSection = () => (
+  <section className="border-t border-slate-900/60 bg-slate-950 py-24">
+    <div className="section-container">
+      <SectionHeader
+        eyebrow="The Journey"
+        title="From unemployed to hired."
+        subtitle="Our structured approach ensures members gain the confidence and connections needed to succeed."
+      />
+      <ol className="mt-16 grid gap-8 lg:grid-cols-4">
+        {processSteps.map((step) => (
+          <li key={step.name} className="relative rounded-3xl border border-slate-800/60 bg-slate-900/70 p-8">
+            <div className="absolute -top-5 left-6 flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white shadow-glow">
+              {step.index}
+            </div>
+            <h3 className="mt-6 text-xl font-semibold text-slate-50">{step.name}</h3>
+            <p className="mt-4 text-sm text-slate-300">{step.description}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+);
+
+const CTASection = () => (
+  <section id="contact" className="border-t border-slate-900/60 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-24">
+    <div className="section-container text-center">
+      <p className="section-eyebrow">Get Involved</p>
+      <h2 className="section-heading">Support Team Builder XP</h2>
+      <p className="section-subheading mx-auto">
+        We call on engineering organizations to donate time, material, and funds to help our members in this pursuit.
+      </p>
+      <div className="mt-10 flex flex-col items-center justify-center gap-6 text-left text-slate-200 sm:flex-row">
+        <div className="rounded-3xl border border-slate-800/60 bg-slate-900/70 p-6 w-full max-w-sm hover:border-brand-500/50 transition">
+          <div className="flex items-center gap-3 mb-2">
+            <Mail className="text-brand-400" size={20} />
+            <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-brand-300">Partner</h3>
+          </div>
+          <p className="text-slate-400 text-sm mb-3">Interested in corporate sponsorship or donations?</p>
+          <a className="block text-lg font-semibold text-slate-50 hover:text-brand-300" href="mailto:contact@teambuilderxp.org">
+            contact@teambuilderxp.org
+          </a>
+        </div>
+        <div className="rounded-3xl border border-slate-800/60 bg-slate-900/70 p-6 w-full max-w-sm hover:border-brand-500/50 transition">
+          <div className="flex items-center gap-3 mb-2">
+            <Rocket className="text-brand-400" size={20} />
+            <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-brand-300">Join Us</h3>
+          </div>
+          <p className="text-slate-400 text-sm mb-3">Looking to mentor or gain experience?</p>
+          <a className="block text-lg font-semibold text-slate-50 hover:text-brand-300" href="#">
+            Apply for Membership
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const Footer = () => (
+  <footer className="border-t border-slate-900/60 bg-slate-950 py-12">
+    <div className="section-container flex flex-col gap-6 text-center text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-left">
+        <p className="font-semibold text-slate-200">Team Builder XP Corp.</p>
+        <p>A Non-Profit Organization (NPO)</p>
+      </div>
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+        <a className="hover:text-brand-200" href="mailto:contact@teambuilderxp.org">
+          Contact
+        </a>
+        <a className="hover:text-brand-200" href="#">
+          Bylaws
+        </a>
+        <p>© {new Date().getFullYear()} All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+);
+
+const App = () => {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500/30">
+        <HeroSection />
+        <ServicesSection />
+        <ExpertiseSection />
+        <ProcessSection />
+        <CTASection />
+        <Footer />
+    </div>
+  );
+};
+
+export default App;''',
+
+    "README.md": r'''# Team Builder XP Corp.
+
+This is the official website for Team Builder XP Corp., a non-profit organization helping unemployed professionals gain experience and skills.
+
+## Deployment
+
+This project uses the exact same stack as intel-agency.com: React + Vite, hosted on Firebase.
+
+1. **Local Development**:
+   ```bash
+   npm install
+   npm run dev
+   ```
+
+2. **Production Build**:
+   ```bash
+   npm run build
+   ```
+
+3. **Deployment**:
+   Push to the `main` branch to trigger the GitHub Action defined in `.github/workflows/ci-deploy.yml`.
+'''
+}
+
+def create_project():
+    print(f"🚀 Initializing Team Builder XP Project...")
+    
+    for filepath, content in project_files.items():
+        # Use os.path.dirname to get the folder path
+        directory = os.path.dirname(filepath)
+        
+        # Create directories if they don't exist
+        # exist_ok=True avoids errors if the directory already exists (threading/race condition safe)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+            # Only print if we actually created it (strictly speaking exist_ok handles it, but nice for logs)
+            if not os.path.exists(directory):
+                print(f"   Created directory: {directory}")
+        
+        # Write the file
+        try:
+            # Force UTF-8 encoding to handle any emojis or special characters
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(content.strip())
+            print(f"   ✅ Generated: {filepath}")
+        except Exception as e:
+            print(f"   ❌ Error creating {filepath}: {e}")
+
+    print("\n✨ Project generation complete! ✨")
+    print("Next steps:")
+    print("1. npm install")
+    print("2. npm run dev")
+
+if __name__ == "__main__":
+    create_project()
