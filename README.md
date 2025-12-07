@@ -65,3 +65,67 @@ The "Patch" format.
     git add .
     git commit -F commit_msg.txt
     ```
+
+
+## Development and Testing
+
+### Running Tests
+
+The project includes a comprehensive test suite covering all functionality of both `seda_bootstrap.py` and `seda_packer.py`.
+
+**Install test dependencies:**
+```bash
+pip install -r requirements-dev.txt
+```
+
+**Run all tests:**
+```bash
+pytest
+```
+
+**Run tests with verbose output:**
+```bash
+pytest -v
+```
+
+**Run tests with coverage:**
+```bash
+pytest --cov=. --cov-report=html
+```
+
+**Run specific test files:**
+```bash
+pytest tests/test_bootstrap.py
+pytest tests/test_packer.py
+pytest tests/test_extraction.py
+```
+
+### Test Structure
+
+The test suite is organized into:
+- `tests/test_bootstrap.py` - Tests for seda_bootstrap.py functionality
+- `tests/test_packer.py` - Tests for seda_packer.py functionality
+- `tests/test_extraction.py` - Integration tests for extraction and cross-platform behavior
+- `tests/conftest.py` - Shared fixtures and utilities
+
+### Continuous Integration
+
+The project uses GitHub Actions to automatically run tests on:
+- **Operating Systems:** Ubuntu, Windows, macOS
+- **Python Versions:** 3.8, 3.9, 3.10, 3.11, 3.12
+
+Tests run automatically on:
+- Push to main/develop branches
+- Pull request creation/updates
+- Manual workflow dispatch
+
+### Test Coverage
+
+The test suite includes:
+- 53+ unit and integration tests
+- Archive creation and extraction tests
+- Binary and text file handling tests
+- Ignore pattern enforcement tests
+- Error handling and edge case tests
+- Cross-platform path handling tests
+- End-to-end workflow tests

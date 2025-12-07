@@ -23,7 +23,7 @@ import re
 
 def extract_payload():
     current_file = os.path.basename(__file__)
-    print(f"📦 Unpacking SEDA Archive: {current_file}...")
+    print(f"Unpacking SEDA Archive: {current_file}...")
     
     # --- FEATURE: SEDA-Commit Message Extraction ---
     # If the file detects it is a 'commit.seda', it tries to extract its own header docstring.
@@ -41,9 +41,9 @@ def extract_payload():
                     
                     with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
                         msg_file.write(clean_msg)
-                    print("   📝 SEDA-Commit detected: extracted 'commit_msg.txt'")
+                    print("   [INFO] SEDA-Commit detected: extracted 'commit_msg.txt'")
         except Exception as e:
-            print(f"   ⚠️ Could not extract commit message: {e}")
+            print(f"   [WARNING] Could not extract commit message: {e}")
     # -----------------------------------------------
 
     for filepath, content in project_files.items():
@@ -65,11 +65,11 @@ def extract_payload():
                     with open(dest_path, 'w', encoding='utf-8') as f:
                         f.write(content)
                         
-            print(f"   ✅ Extracted: {filepath}")
+            print(f"   [OK] Extracted: {filepath}")
         except Exception as e:
-            print(f"   ❌ Error extracting {filepath}: {e}")
+            print(f"   [ERROR] Error extracting {filepath}: {e}")
 
-    print("\n✨ Extraction complete! ✨")
+    print("\nExtraction complete!")
 
 if __name__ == "__main__":
     extract_payload()
@@ -78,7 +78,7 @@ if __name__ == "__main__":
 def is_binary(file_path):
     """Simple check to see if a file is binary text."""
     try:
-        with open(file_path, 'tr') as check_file:
+        with open(file_path, 'r', encoding='utf-8') as check_file:
             check_file.read()
             return False
     except:
@@ -104,11 +104,11 @@ def generate_seda(source_dir, output_filename, recursive_pack_seda=False, extra_
         print(f"Error: Source directory '{source_dir}' does not exist.")
         return
 
-    print(f"🗄️  Packing '{os.path.basename(source_dir)}' into '{output_filename}'...")
-    print(f"   ℹ️  Recursive SEDA Packing: {'ENABLED' if recursive_pack_seda else 'DISABLED'}")
+    print(f"Packing '{os.path.basename(source_dir)}' into '{output_filename}'...")
+    print(f"   [INFO] Recursive SEDA Packing: {'ENABLED' if recursive_pack_seda else 'DISABLED'}")
     
     if docstring:
-        print("   📝 Attaching custom commit message/docstring.")
+        print("   [INFO] Attaching custom commit message/docstring.")
 
     file_data = {}
 
@@ -134,9 +134,9 @@ def generate_seda(source_dir, output_filename, recursive_pack_seda=False, extra_
                     with open(full_path, "r", encoding="utf-8") as f:
                         file_data[rel_path] = f.read()
                     
-                print(f"   ➕ Added: {rel_path}")
+                print(f"   + Added: {rel_path}")
             except Exception as e:
-                print(f"   ⚠️ Skipping {rel_path}: {e}")
+                print(f"   ! Skipping {rel_path}: {e}")
 
     with open(output_filename, "w", encoding="utf-8") as out:
         out.write("#!/usr/bin/env python3\n")
@@ -157,13 +157,13 @@ def generate_seda(source_dir, output_filename, recursive_pack_seda=False, extra_
             if isinstance(content, str) and "'''" not in content:
                  out.write(f"    '{path}': r'''{content}''',\n")
             else:
-                 print(f"   🛡️  Sentinel Active: {path} contains delimiters. Using safe repr().")
+                 print(f"   [SENTINEL] {path} contains delimiters. Using safe repr().")
                  out.write(f"    '{path}': {repr(content)},\n")
                  
         out.write("}\n")
         out.write(EXTRACTOR_TEMPLATE)
 
-    print(f"\n🎉 SEDA archive created: {output_filename}")
+    print(f"\nSEDA archive created: {output_filename}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="SEDA Packer Tool v1.1")
