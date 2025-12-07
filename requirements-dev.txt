@@ -1,0 +1,10 @@
+# Development and Testing Dependencies for SEDA
+
+# Testing framework
+pytest>=7.0.0
+
+# Property-based testing
+hypothesis>=6.0.0
+
+# Code coverage
+pytest-cov>=4.0.0

@@ -1,0 +1,47 @@
+[run]
+# Coverage configuration for SEDA project
+
+# Source code to measure
+source = .
+
+# Omit these files/directories from coverage
+omit =
+    tests/*
+    .venv/*
+    venv/*
+    */site-packages/*
+    setup.py
+    */tests/*
+    */__pycache__/*
+    */conftest.py
+
+[report]
+# Reporting options
+precision = 2
+show_missing = True
+skip_covered = False
+
+# Exclude lines from coverage
+exclude_lines =
+    # Standard pragma
+    pragma: no cover
+    
+    # Don't complain about missing debug code
+    def __repr__
+    
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    
+    # Don't complain about abstract methods
+    @abstractmethod
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
