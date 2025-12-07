@@ -17,10 +17,16 @@ When an AI generates a multi-file project or a complex refactor:
 SEDA solves this by encapsulating the **Code**, the **Structure**, and the **Context** (Commit Message) into a single file that does the work for you.
 
 ## How It Works
-A `.seda` file is a valid Python script containing:
-1.  **The Header:** A docstring containing metadata or commit messages.
-2.  **The Payload:** A Python dictionary where keys are file paths and values are content (Text or Base64-encoded Binary).
-3.  **The Engine:** A small, embedded script that iterates through the payload and writes files to disk.
+A `.seda` file is a polyglot file format. This means that both of the following statements are true at the same time:
+
+* It is a valid Python script (.py) containing:
+    1. **The Header:** A docstring containing metadata or commit messages.
+    2. **The Payload:** A Python dictionary where keys are file paths and values are content (Text or Base64-encoded Binary).
+    3. **The Engine:** A small, embedded script that iterates through the payload and writes files to disk.
+
+* It is also a valid Markdown file (.md) containing documentation or instructions for use.
+
+> *But how can both of these be true at the same time fow one file?*, you say. I know- its a real mind-bender. But I can assure you, my mind-blown reader, it is quite true. Read on...
 
 ## The Tools
 
