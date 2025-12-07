@@ -1,0 +1,15 @@
+Inaugural Release: SEDA v0.9.1 (Hotfix)
+
+This commit establishes the official v0.9.1 release of the SEDA protocol
+and toolset.
+
+Summary of Changes:
+1. Updated Versioning:
+   - Set protocol version to v0.9.1 in `README.md`.
+   - Updated `seda_packer.py` to stamp generated files with v0.9.1.
+
+2. Documentation:
+   - Included self-replication instructions in `README.md` and `AGENTS.md`.
+   - Fixed syntax error in AGENTS.md payload caused by literal triple quotes.
+
+This archive serves as the "Golden Master" for SEDA v0.9.1.
