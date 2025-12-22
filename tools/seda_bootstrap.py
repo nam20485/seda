@@ -3,6 +3,7 @@ import sys
 import base64
 
 # The "Self-Exploding" Header
+# This makes the file executable Python AND readable Markdown.
 BOOTSTRAP_HEADER = r'''#!/usr/bin/env python3
 """
 # 📦 Self-Extracting Document Archive (SEDA)
@@ -39,7 +40,7 @@ import sys
 # The Extractor Logic (The "Engine" inside the document)
 EXTRACTOR_LOGIC = r'''
 def extract_payload():
-    print(f"💥 Self-Exploding SEDA Archive: {os.path.basename(__file__)}")
+    print(f"Self-Exploding SEDA Archive: {os.path.basename(__file__)}")
     print("   Extracting files...")
     
     for filepath, content in PAYLOAD.items():
@@ -75,11 +76,11 @@ def extract_payload():
                      with open(dest_path, 'w', encoding='utf-8') as f:
                         f.write(content)
 
-            print(f"   ✅ Extracted: {filepath}")
+            print(f"   [OK] Extracted: {filepath}")
         except Exception as e:
-            print(f"   ❌ Error extracting {filepath}: {e}")
+            print(f"   [ERROR] Error extracting {filepath}: {e}")
 
-    print("\n✨ Explosion complete! All files extracted. ✨")
+    print("\nExplosion complete! All files extracted.")
 
 if __name__ == "__main__":
     extract_payload()
@@ -97,7 +98,7 @@ IGNORE_EXTENSIONS = {
 def is_binary(file_path):
     """Check if file is binary."""
     try:
-        with open(file_path, 'tr') as check_file:
+        with open(file_path, 'r', encoding='utf-8') as check_file:
             check_file.read()
             return False
     except:
@@ -110,7 +111,7 @@ def create_bootstrap_seda(source_dir, output_filename):
         print(f"Error: Source directory '{source_dir}' does not exist.")
         return
 
-    print(f"🧨 Preparing self-exploding document from '{os.path.basename(source_dir)}'...")
+    print(f"Preparing self-exploding document from '{os.path.basename(source_dir)}'...")
 
     file_data = {}
     file_list_md = ""
@@ -135,9 +136,9 @@ def create_bootstrap_seda(source_dir, output_filename):
                 else:
                     with open(full_path, "r", encoding="utf-8") as f:
                         file_data[rel_path] = f.read()
-                print(f"   ➕ Added: {rel_path}")
+                print(f"   + Added: {rel_path}")
             except Exception as e:
-                print(f"   ⚠️ Skipping {rel_path}: {e}")
+                print(f"   ! Skipping {rel_path}: {e}")
 
     # Assemble the document
     with open(output_filename, "w", encoding="utf-8") as out:
@@ -165,7 +166,7 @@ def create_bootstrap_seda(source_dir, output_filename):
     except:
         pass
 
-    print(f"\n🎉 Self-Exploding Document created: {output_filename}")
+    print(f"\nSelf-Exploding Document created: {output_filename}")
     print(f"   Try running it: ./ {output_filename}  (or python {output_filename})")
 
 if __name__ == "__main__":
