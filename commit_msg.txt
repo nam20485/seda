@@ -1,15 +1,20 @@
-Inaugural Release: SEDA v0.9.1 (Hotfix)
+Release SEDA v1.3: The Standardized Extension Update
 
-This commit establishes the official v0.9.1 release of the SEDA protocol
-and toolset.
+This version introduces 'Extension Mandating' in the packer. The user 
+is now only responsible for the base name; the tool automatically 
+appends the correct subtype extension based on the provided flags.
 
 Summary of Changes:
-1. Updated Versioning:
-   - Set protocol version to v0.9.1 in `README.md`.
-   - Updated `seda_packer.py` to stamp generated files with v0.9.1.
+1. Updated `tools/seda_packer.py`:
+   - Implemented `mandate_extension()` logic.
+   - Strips user-provided extensions and re-appends based on flags:
+     - [Docstring] + [Post-Install] -> .smartpatch.seda
+     - [Docstring] Only -> .commit.seda
+     - [Post-Install] Only -> .construct.seda
+     - [Neither] -> .seda
 
-2. Documentation:
-   - Included self-replication instructions in `README.md` and `AGENTS.md`.
-   - Fixed syntax error in AGENTS.md payload caused by literal triple quotes.
+2. Updated `README.md` & `AGENTS.md`:
+   - Documented the mandated naming convention.
+   - Refined instructions for protocol compliance.
 
-This archive serves as the "Golden Master" for SEDA v0.9.1.
+This archive serves as the "Golden Master" for SEDA v1.3.
