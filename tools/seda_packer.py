@@ -2,208 +2,300 @@ import os
 import sys
 import argparse
 import base64
+import re
+import getpass
+import hashlib
+import json
 
-# Configuration: Folders to always ignore (Defaults)
-DEFAULT_IGNORE_DIRS = {
-    'node_modules', '__pycache__', '.git', 'dist', 'build', 
-    '.DS_Store', '.idea', '.vscode', 'coverage'
-}
+DEFAULT_IGNORE_DIRS = {'node_modules', '__pycache__', '.git', 'dist', 'build', '.DS_Store'}
+DEFAULT_IGNORE_EXTENSIONS = {'.pyc', '.log', '.seda', '.exe', '.dll', '.so', '.dylib'}
 
-# Configuration: File extensions to always ignore (Defaults)
-DEFAULT_IGNORE_EXTENSIONS = {
-    '.pyc', '.log', '.seda', '.exe', '.dll', '.so', '.dylib'
-}
-
-# The template for the extractor logic
-EXTRACTOR_TEMPLATE = r'''
+# --- VAULT TEMPLATES ---
+VAULT_EXTRACTOR_TEMPLATE = r'''
 import os
 import sys
 import base64
 import re
+import subprocess
+import getpass
+import hashlib
+import json
+import itertools
+
+def derive_key(password, salt, iterations=100000):
+    return hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations)
+
+def decrypt_payload(encrypted_blob, password):
+    try:
+        data = base64.b64decode(encrypted_blob)
+        salt = data[:16]
+        ciphertext = data[16:]
+        
+        key = derive_key(password, salt)
+        
+        # XOR Decryption (Simple stream cipher for dependency-free portability)
+        decrypted = bytearray()
+        for b, k in zip(ciphertext, itertools.cycle(key)):
+            decrypted.append(b ^ k)
+            
+        return json.loads(decrypted.decode('utf-8'))
+    except Exception:
+        return None
 
 def extract_payload():
     current_file = os.path.basename(__file__)
-    print(f"📦 Unpacking SEDA Archive: {current_file}...")
+    print(f"🔒 Locked Archive: {current_file}")
     
-    # --- FEATURE: SEDA-Commit Message Extraction (Type 5) ---
-    if current_file.endswith('.commit.seda') or current_file.endswith('.commit.py'):
-        try:
-            with open(__file__, 'r', encoding='utf-8') as f:
-                content = f.read()
-                # Extract content between the first set of triple quotes
-                match = re.search(r'"""(.*?)"""', content, re.DOTALL)
-                if match:
-                    msg = match.group(1).strip()
-                    lines = [l for l in msg.splitlines() if not l.startswith("#!")]
-                    clean_msg = "\n".join(lines).strip()
-                    
-                    with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
-                        msg_file.write(clean_msg)
-                    print("   📝 SEDA-Commit detected: extracted 'commit_msg.txt'")
-        except Exception as e:
-            print(f"   ⚠️ Could not extract commit message: {e}")
-    # --------------------------------------------------------
+    password = getpass.getpass("🔑 Enter Password: ")
+    
+    # Decrypt Payload
+    # 'VAULT_BLOB' is injected by the packer
+    project_files = decrypt_payload(VAULT_BLOB, password)
+    
+    if project_files is None:
+        print("❌ Error: Invalid Password or Corrupted Archive.")
+        sys.exit(1)
+        
+    print(f"🔓 Access Granted. Unpacking...")
 
+    # --- STANDARD EXTRACTION LOGIC ---
+    # Context Extraction (From decrypted payload if present in special key)
+    if '__docstring__' in project_files:
+        try:
+            with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
+                msg_file.write(project_files['__docstring__'])
+            print("   📝 Context extracted to 'commit_msg.txt'")
+            del project_files['__docstring__'] # Remove from file list
+        except: pass
+
+    # Extraction Loop
     for filepath, content in project_files.items():
         dest_path = os.path.join(os.getcwd(), filepath)
-        directory = os.path.dirname(dest_path)
-        
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         try:
-            if isinstance(content, bytes):
-                with open(dest_path, 'wb') as f:
-                    f.write(content)
+            if isinstance(content, str) and content.startswith('BASE64:'):
+                 with open(dest_path, 'wb') as f: f.write(base64.b64decode(content[7:]))
             else:
-                if filepath.endswith(('.png', '.jpg', '.ico', '.svg', '.pdf')):
-                     with open(dest_path, 'wb') as f:
-                        f.write(base64.b64decode(content))
-                else:
-                    with open(dest_path, 'w', encoding='utf-8') as f:
-                        f.write(content)
-                        
+                with open(dest_path, 'w', encoding='utf-8') as f: f.write(content)
             print(f"   ✅ Extracted: {filepath}")
         except Exception as e:
-            print(f"   ❌ Error extracting {filepath}: {e}")
+            print(f"   ❌ Error: {e}")
 
-    print("\n✨ Extraction complete! ✨")
+    # Post-Install
+    if 'POST_INSTALL' in globals():
+        print("\n⚙️  Running Pipeline...")
+        cmd = POST_INSTALL.get('nt', POST_INSTALL.get('universal')) if os.name == 'nt' else POST_INSTALL.get('posix', POST_INSTALL.get('universal'))
+        if cmd:
+            try:
+                subprocess.run(cmd, shell=True, check=True)
+                print("   ✅ Success.")
+            except subprocess.CalledProcessError as e:
+                print(f"   ❌ Failed (Code {e.returncode})")
+                sys.exit(e.returncode)
 
 if __name__ == "__main__":
     extract_payload()
 '''
 
-def is_binary(file_path):
-    """Simple check to see if a file is binary text."""
-    try:
-        with open(file_path, 'tr') as check_file:
-            check_file.read()
-            return False
-    except:
-        return True
+# --- STANDARD TEMPLATES ---
+# (Existing template for non-vault archives)
+STANDARD_EXTRACTOR_TEMPLATE = r'''
+import os
+import sys
+import base64
+import re
+import subprocess
 
-def generate_seda(source_dir, output_filename, recursive_pack_seda=False, extra_ignore_dirs=None, extra_ignore_exts=None, docstring=None):
-    source_dir = os.path.abspath(source_dir)
+def extract_payload():
+    current_file = os.path.basename(__file__)
+    print(f"📦 Unpacking SEDA Archive: {current_file}...")
     
-    # Setup ignore sets
-    ignore_dirs = set(DEFAULT_IGNORE_DIRS)
-    if extra_ignore_dirs:
-        ignore_dirs.update(extra_ignore_dirs)
-        
-    ignore_exts = set(DEFAULT_IGNORE_EXTENSIONS)
-    if extra_ignore_exts:
-        ignore_exts.update(extra_ignore_exts)
-        
-    # Handle recursion flag
-    if recursive_pack_seda and '.seda' in ignore_exts:
-        ignore_exts.remove('.seda')
-    
-    if not os.path.exists(source_dir):
-        print(f"Error: Source directory '{source_dir}' does not exist.")
-        return
+    # Context Extraction
+    if any(current_file.endswith(ext) for ext in ['.commit.seda', '.smartpatch.seda']):
+        try:
+            with open(__file__, 'r', encoding='utf-8') as f:
+                content = f.read()
+                match = re.search(r'"""(.*?)"""', content, re.DOTALL)
+                if match:
+                    clean_msg = re.sub(r'<[^>]+>', '', match.group(1)).strip()
+                    clean_msg = "\n".join([l for l in clean_msg.splitlines() if not l.startswith("#!") and not l.strip() == ""]).strip()
+                    with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
+                        msg_file.write(clean_msg)
+        except: pass
 
-    print(f"🗄️  Packing '{os.path.basename(source_dir)}' into '{output_filename}'...")
-    print(f"   ℹ️  Recursive SEDA Packing: {'ENABLED' if recursive_pack_seda else 'DISABLED'}")
+    # Extraction Loop
+    for filepath, content in project_files.items():
+        dest_path = os.path.join(os.getcwd(), filepath)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        try:
+            if isinstance(content, bytes):
+                with open(dest_path, 'wb') as f: f.write(content)
+            else:
+                if filepath.endswith(('.png', '.jpg', '.ico', '.svg', '.pdf')):
+                     with open(dest_path, 'wb') as f: f.write(base64.b64decode(content))
+                else:
+                    with open(dest_path, 'w', encoding='utf-8') as f: f.write(content)
+            print(f"   ✅ Extracted: {filepath}")
+        except Exception as e:
+            print(f"   ❌ Error: {e}")
+
+    # Post-Install
+    if 'POST_INSTALL' in globals():
+        print("\n⚙️  Running Pipeline...")
+        cmd = POST_INSTALL.get('nt', POST_INSTALL.get('universal')) if os.name == 'nt' else POST_INSTALL.get('posix', POST_INSTALL.get('universal'))
+        if cmd:
+            try:
+                subprocess.run(cmd, shell=True, check=True)
+                print("   ✅ Success.")
+            except subprocess.CalledProcessError as e:
+                print(f"   ❌ Failed (Code {e.returncode})")
+                sys.exit(e.returncode)
+
+if __name__ == "__main__":
+    extract_payload()
+'''
+
+def encrypt_payload(payload_dict, password):
+    import itertools
+    # Convert payload to JSON bytes
+    # Handle mixed types (bytes/str)
+    clean_payload = {}
+    for k, v in payload_dict.items():
+        if isinstance(v, bytes):
+            clean_payload[k] = "BASE64:" + v.decode('utf-8') # Packer stored b64 as bytes in dict
+        else:
+            clean_payload[k] = v
+            
+    plaintext = json.dumps(clean_payload).encode('utf-8')
     
-    if docstring:
-        print("   📝 Attaching custom commit message/docstring.")
+    # Generate Salt
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    
+    # XOR Encryption
+    ciphertext = bytearray()
+    for b, k in zip(plaintext, itertools.cycle(key)):
+        ciphertext.append(b ^ k)
+        
+    # Return Salt + Ciphertext (Base64 encoded for text file safety)
+    return base64.b64encode(salt + ciphertext).decode('utf-8')
+
+def generate_seda(source_dir, output_filename, docstring=None, post_install=None, is_web=False, is_vault=False):
+    base_output = output_filename if output_filename else os.path.basename(os.path.abspath(source_dir))
+    
+    # Strip extensions
+    for ext in ['.smartpatch.seda', '.construct.seda', '.commit.seda', '.seda.html', '.vault.seda', '.seda', '.py']:
+        if base_output.lower().endswith(ext):
+            base_output = base_output[:-len(ext)]
+            break
+
+    # Determine Extension
+    if is_vault:
+        final_ext = ".vault.seda"
+    elif is_web:
+        final_ext = ".seda.html"
+    elif docstring and post_install:
+        final_ext = ".smartpatch.seda"
+    elif docstring:
+        final_ext = ".commit.seda"
+    elif post_install:
+        final_ext = ".construct.seda"
+    else:
+        final_ext = ".seda"
+    
+    output_name = base_output + final_ext
+    print(f"🗄️  Packing: {output_name}")
+
+    if is_vault:
+        password = getpass.getpass("🔑 Enter Password for Vault: ")
+        confirm = getpass.getpass("🔑 Confirm Password: ")
+        if password != confirm:
+            print("❌ Passwords do not match.")
+            sys.exit(1)
 
     file_data = {}
-
     for root, dirs, files in os.walk(source_dir):
-        # Filter ignored directories
-        dirs[:] = [d for d in dirs if d not in ignore_dirs]
-            
+        dirs[:] = [d for d in dirs if d not in DEFAULT_IGNORE_DIRS]
         for file in files:
-            # Check extensions
-            if any(file.endswith(ext) for ext in ignore_exts):
-                continue
-                
+            if any(file.endswith(ext) for ext in DEFAULT_IGNORE_EXTENSIONS): continue
             full_path = os.path.join(root, file)
-            rel_path = os.path.relpath(full_path, source_dir)
-            rel_path = rel_path.replace('\\', '/')
-
+            rel_path = os.path.relpath(full_path, source_dir).replace('\\', '/')
             try:
-                if is_binary(full_path):
-                    with open(full_path, "rb") as f:
-                        encoded = base64.b64encode(f.read()).decode('utf-8')
-                        file_data[rel_path] = encoded
-                else:
-                    with open(full_path, "r", encoding="utf-8") as f:
-                        file_data[rel_path] = f.read()
-                    
+                with open(full_path, "r", encoding="utf-8") as f: file_data[rel_path] = f.read()
                 print(f"   ➕ Added: {rel_path}")
-            except Exception as e:
-                print(f"   ⚠️ Skipping {rel_path}: {e}")
+            except:
+                with open(full_path, "rb") as f: 
+                    # Store as string for consistency in vault logic
+                    file_data[rel_path] = "BASE64:" + base64.b64encode(f.read()).decode('utf-8')
+    
+    # Inject docstring into payload for Vaults (so it's encrypted too)
+    if is_vault and docstring:
+        file_data['__docstring__'] = docstring
 
-    with open(output_filename, "w", encoding="utf-8") as out:
+    with open(output_name, "w", encoding="utf-8") as out:
+        if is_web:
+            # Type 3 Polyglot Header (Not supported for Vault yet)
+            out.write("<!--\n")
+            out.write('"""\n')
+        
         out.write("#!/usr/bin/env python3\n")
         
-        # WRITE THE DOCSTRING / COMMIT MESSAGE
-        if docstring:
-            out.write('"""\n')
-            out.write(docstring)
-            out.write('\n"""\n')
+        # Docstring (Public for standard, hidden for Vault)
+        if docstring and not is_vault:
+            out.write('"""\n' + docstring + '\n"""\n')
         else:
             out.write('"""\n# SEDA Archive\n"""\n')
             
-        out.write("# Generated by SEDA Packer v0.9.1\n\n")
-        out.write("project_files = {\n")
+        out.write(f"# Generated by SEDA Packer v1.5\n\n")
+        if post_install: out.write(f"POST_INSTALL = {repr(post_install)}\n\n")
         
-        for path, content in file_data.items():
-            # SENTINEL CHECK: Guard against delimiter collision
-            if isinstance(content, str) and "'''" not in content:
-                 out.write(f"    '{path}': r'''{content}''',\n")
-            else:
-                 print(f"   🛡️  Sentinel Active: {path} contains delimiters. Using safe repr().")
-                 out.write(f"    '{path}': {repr(content)},\n")
-                 
-        out.write("}\n")
-        out.write(EXTRACTOR_TEMPLATE)
+        if is_vault:
+            encrypted_blob = encrypt_payload(file_data, password)
+            out.write(f"VAULT_BLOB = {repr(encrypted_blob)}\n")
+            out.write(VAULT_EXTRACTOR_TEMPLATE)
+        else:
+            out.write("project_files = {\n")
+            for path, content in file_data.items():
+                # Handle base64 prefix from reading loop
+                val_to_write = content
+                if isinstance(content, str) and content.startswith("BASE64:"):
+                     # Decode back to bytes for standard packer logic compatibility or keep as b64 str
+                     # v1.5 Standard packer expects raw bytes or str.
+                     # Reverting the prefix for standard:
+                     val_to_write = base64.b64decode(content[7:])
+                
+                if isinstance(val_to_write, str) and "'''" not in val_to_write:
+                    out.write(f"    '{path}': r'''{val_to_write}''',\n")
+                else:
+                    out.write(f"    '{path}': {repr(val_to_write)},\n")
+            out.write("}\n")
+            out.write(STANDARD_EXTRACTOR_TEMPLATE)
+        
+        if is_web:
+            out.write('\n"""\n-->')
     
-    # Make the generated archive executable
-    try:
-        os.chmod(output_filename, 0o755)
-        print(f"   🔧 Permissions set to executable (755)")
-    except Exception as e:
-        print(f"   ⚠️ Could not set executable permissions: {e}")
+    try: os.chmod(output_name, 0o755)
+    except: pass
 
-    print(f"\n🎉 SEDA archive created: {output_filename}")
+    print(f"\n🎉 Created: {output_name}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SEDA Packer Tool v0.9.1")
-    parser.add_argument("source_dir", help="Directory to pack")
-    parser.add_argument("output_filename", nargs="?", help="Output filename (default: <dirname>.seda)")
-    
-    # Flags
-    parser.add_argument("--recursive-pack-seda", action="store_true", help="Allow packing of .seda files")
-    parser.add_argument("--ignore-dirs", help="Comma-separated list of additional directories to ignore")
-    parser.add_argument("--ignore-exts", help="Comma-separated list of additional extensions to ignore")
-    
-    # New Commit SEDA Flags
-    parser.add_argument("--docstring", help="Text to use as the file docstring (commit message)")
-    parser.add_argument("--docstring-file", help="File containing text to use as the docstring")
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source_dir")
+    parser.add_argument("output_filename", nargs="?")
+    parser.add_argument("--docstring")
+    parser.add_argument("--post-install")
+    parser.add_argument("--web", action="store_true", help="Generate Type 3 Polyglot")
+    parser.add_argument("--vault", action="store_true", help="Generate Type 2 Encrypted Vault")
     args = parser.parse_args()
     
-    # Process defaults
-    target_dir = args.source_dir
-    output_name = args.output_filename if args.output_filename else f"{os.path.basename(os.path.abspath(target_dir))}.seda"
-    if not output_name.endswith('.seda') and not output_name.endswith('.py'):
-        output_name += '.seda'
+    post_map = None
+    if args.post_install:
+        if "win:" in args.post_install:
+            post_map = {}
+            for p in args.post_install.split(','):
+                if p.startswith("win:"): post_map['nt'] = p[4:]
+                if p.startswith("unix:"): post_map['posix'] = p[5:]
+        else: post_map = {"universal": args.post_install}
         
-    # Process Lists
-    extra_dirs = args.ignore_dirs.split(',') if args.ignore_dirs else []
-    extra_exts = args.ignore_exts.split(',') if args.ignore_exts else []
-    
-    # Process Docstring
-    doc_text = args.docstring
-    if args.docstring_file:
-        try:
-            with open(args.docstring_file, 'r', encoding='utf-8') as f:
-                doc_text = f.read()
-        except Exception as e:
-            print(f"Error reading docstring file: {e}")
-            sys.exit(1)
-
-    generate_seda(target_dir, output_name, args.recursive_pack_seda, extra_dirs, extra_exts, doc_text)
+    generate_seda(args.source_dir, args.output_filename, args.docstring, post_map, args.web, args.vault)

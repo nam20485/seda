@@ -1,15 +1,17 @@
-Inaugural Release: SEDA v0.9.1 (Hotfix)
+feat: introduce SEDA-Vault (Type 2) Encryption Support (Hotfix)
 
-This commit establishes the official v0.9.1 release of the SEDA protocol
-and toolset.
+This Smart Patch upgrades the SEDA protocol to v1.5, introducing Type 2 support.
+Type 2 archives are "Vault" files: encrypted archives that require a password to unpack.
 
-Summary of Changes:
-1. Updated Versioning:
-   - Set protocol version to v0.9.1 in `README.md`.
-   - Updated `seda_packer.py` to stamp generated files with v0.9.1.
+Features:
+- New `--vault` flag in `seda_packer.py`.
+- Generates files with `.vault.seda` extension.
+- Implements dependency-free encryption (PBKDF2 key derivation + XOR stream cipher).
+- Runtime password prompt.
 
-2. Documentation:
-   - Included self-replication instructions in `README.md` and `AGENTS.md`.
-   - Fixed syntax error in AGENTS.md payload caused by literal triple quotes.
+Fixes:
+- Forces UTF-8 encoding in validation scripts to prevent Windows 'charmap' errors.
 
-This archive serves as the "Golden Master" for SEDA v0.9.1.
+Post-Install:
+- Runs validation.
+- Commits changes to the repo.
