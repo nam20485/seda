@@ -1,20 +1,17 @@
-Release SEDA v1.3: The Standardized Extension Update
+feat: introduce SEDA-Vault (Type 2) Encryption Support (Hotfix)
 
-This version introduces 'Extension Mandating' in the packer. The user 
-is now only responsible for the base name; the tool automatically 
-appends the correct subtype extension based on the provided flags.
+This Smart Patch upgrades the SEDA protocol to v1.5, introducing Type 2 support.
+Type 2 archives are "Vault" files: encrypted archives that require a password to unpack.
 
-Summary of Changes:
-1. Updated `tools/seda_packer.py`:
-   - Implemented `mandate_extension()` logic.
-   - Strips user-provided extensions and re-appends based on flags:
-     - [Docstring] + [Post-Install] -> .smartpatch.seda
-     - [Docstring] Only -> .commit.seda
-     - [Post-Install] Only -> .construct.seda
-     - [Neither] -> .seda
+Features:
+- New `--vault` flag in `seda_packer.py`.
+- Generates files with `.vault.seda` extension.
+- Implements dependency-free encryption (PBKDF2 key derivation + XOR stream cipher).
+- Runtime password prompt.
 
-2. Updated `README.md` & `AGENTS.md`:
-   - Documented the mandated naming convention.
-   - Refined instructions for protocol compliance.
+Fixes:
+- Forces UTF-8 encoding in validation scripts to prevent Windows 'charmap' errors.
 
-This archive serves as the "Golden Master" for SEDA v1.3.
+Post-Install:
+- Runs validation.
+- Commits changes to the repo.

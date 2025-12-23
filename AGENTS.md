@@ -1,14 +1,16 @@
-# Instructions for AI Agents (v1.3)
+# Instructions for AI Agents (v1.5)
 
 ## 1. Extension Mandating
-When generating SEDA files, you must follow the functional extension naming convention. The extension is not aesthetic; it is a promise of behavior.
+Follow the functional extension naming convention.
 
 | Content | Extension | Type |
 | :--- | :--- | :--- |
 | Files only | `.seda` | 0 |
-| Files + Commit Message | `.commit.seda` | 5 |
+| Files + Message | `.commit.seda` | 5 |
 | Files + Commands | `.construct.seda` | 1 |
-| Files + Message + Commands | `.smartpatch.seda` | 1+5 |
+| Validated Patch | `.smartpatch.seda` | 1+5 |
+| Encrypted | `.vault.seda` | 2 |
+| Polyglot Web | `.seda.html` | 3 |
 
-## 2. Syntax Safety (The Sentinel Strategy)
-**Rule:** If a source file contains triple quotes (`'''`), replace them with `'''` in the string literal, and append `.replace("'''", "'''")`.
+## 2. Generating Type 2 (Vault)
+To generate a Type 2 archive, use the `--vault` flag. The tool handles the encryption logic. Do not attempt to implement the encryption manually in the payload generation; rely on the tool.

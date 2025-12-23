@@ -1,28 +1,31 @@
 # 📦 SEDA: Self-Extracting Document Archive
 
-**Version:** 1.3
-**Status:** Active (Standardized Extensions)
+**Version:** 1.5
+**Status:** Active (Vault Support)
 
 ## What is SEDA?
 SEDA is a protocol for packaging files, directory structures, and metadata into a single, executable Python script.
 
-## The Extension Mandate (v1.3)
-To ensure reliability and user expectation, the SEDA toolset now mandates subtype extensions. Users provide a **Base Name**, and the tool determines the **Functionality Extension** based on the contents:
+## Subtypes & Extensions
 
-* **`NAME.seda`** (Type 0): Standard archive. Unpacks files only.
-* **`NAME.commit.seda`** (Type 5): Contextual patch. Unpacks files + extracts commit message.
-* **`NAME.construct.seda`** (Type 1): Active installer. Unpacks files + runs setup commands.
-* **`NAME.smartpatch.seda`** (Type 1+5): Validated patch. Unpacks + Validates + Commits.
+| Type | Extension | Capability |
+| :--- | :--- | :--- |
+| **0** | `.seda` | **Core:** Unpacks files to disk. |
+| **5** | `.commit.seda` | **Commit:** Unpacks + extracts git commit message. |
+| **1** | `.construct.seda` | **Construct:** Unpacks + runs setup commands. |
+| **1+5**| `.smartpatch.seda`| **SmartPatch:** Unpacks + Validates + Commits. |
+| **3** | `.seda.html` | **Web:** Polyglot. Runs in Python OR Browser. |
+| **2** | `.vault.seda` | **Vault:** Encrypted. Requires password. |
 
 ## The Tools
 
 ### `seda_packer.py`
 **Usage:**
-```bash
-# User only provides the name 'patch-v1'. 
-# Tool appends '.commit.seda' automatically because --docstring is present.
-python tools/seda_packer.py ./src patch-v1 --docstring "Fix bugs"
-```
 
-### `seda_bootstrap.py`
-A lightweight script to generate SEDA files if the packer is not available.
+**Create a Vault Archive (Type 2)**
+```bash
+python tools/seda_packer.py ./secrets --vault
+# Prompts for password...
+# Output: secrets.vault.seda
+```
+When the user runs `python secrets.vault.seda`, they will be prompted for the password before extraction begins.
