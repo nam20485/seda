@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""
+feat: implement self-validating patch logic (v1.2.1)
+
+This is a SEDA Type 1+5 Hybrid, formally categorized as a 'SmartPatch'.
+It represents a verified unit of work that ensures environment 
+integrity before modifying the git history.
+
+Subtype: .smartpatch.seda (Type 1+5+Test)
+
+Workflow:
+1. Unpacks `logic.py` and `test_logic.py`.
+2. Extracts this commit message to `commit_msg.txt`.
+3. Validates the environment by running the test suite.
+4. IF tests pass -> Executes `git add` and `git commit`.
+
+If validation fails, the process halts. No commit is made.
+"""
+import os
+import sys
+import base64
+import re
+import subprocess
+
+# --- POST INSTALL CONFIG (Type 1 Logic) ---
+# The pipeline: [Validation] && [Stage] && [Commit]
+POST_INSTALL = {
+    'universal': "python test_logic.py && git add logic.py test_logic.py && git commit -F commit_msg.txt"
+}
+
+# --- PAYLOAD SECTION (Type 0 Logic) ---
+project_files = {
+    'logic.py': r'''
+def add(a, b):
+    return a + b
+''',
+
+    'test_logic.py': r'''
+import unittest
+from logic import add
+
+class TestLogic(unittest.TestCase):
+    def test_add(self):
+        self.assertEqual(add(2, 2), 4)
+        print("\n✅ Validation Successful: Logic is sound.")
+
+if __name__ == '__main__':
+    unittest.main()
+'''
+}
+
+# --- EXTRACTOR ENGINE (v1.2.1) ---
+def extract_payload():
+    current_file = os.path.basename(__file__)
+    
+    # Extension-based Type Detection
+    is_smartpatch = current_file.endswith('.smartpatch.seda')
+    is_commit = current_file.endswith('.commit.seda') or is_smartpatch
+    
+    print(f"📦 Unpacking SEDA {'SmartPatch' if is_smartpatch else 'Archive'}: {current_file}...")
+    
+    # 1. Type 5 Logic: Extract Context
+    if is_commit:
+        try:
+            with open(__file__, 'r', encoding='utf-8') as f:
+                content = f.read()
+                match = re.search(r'"""(.*?)"""', content, re.DOTALL)
+                if match:
+                    msg = match.group(1).strip()
+                    # Clean shebangs/formatting
+                    lines = [l for l in msg.splitlines() if not l.startswith("#!")]
+                    clean_msg = "\n".join(lines).strip()
+                    with open("commit_msg.txt", "w", encoding="utf-8") as msg_file:
+                        msg_file.write(clean_msg)
+                    print("   📝 Context extracted to 'commit_msg.txt'")
+        except Exception as e:
+            print(f"   ⚠️ Context Extraction Error: {e}")
+
+    # 2. Type 0 Logic: Unpack Payload
+    for filepath, content in project_files.items():
+        dest_path = os.path.join(os.getcwd(), filepath)
+        if os.path.dirname(dest_path):
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        try:
+            with open(dest_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"   ✅ Extracted: {filepath}")
+        except Exception as e:
+            print(f"   ❌ Extraction Error: {e}")
+
+    # 3. Type 1 Logic: Pipeline Execution
+    if 'POST_INSTALL' in globals():
+        print("\n🛡️  Initializing Post-Extraction Pipeline...")
+        # Resolve command based on OS
+        cmd = POST_INSTALL.get('nt', POST_INSTALL.get('universal')) if os.name == 'nt' else POST_INSTALL.get('posix', POST_INSTALL.get('universal'))
+        
+        if cmd:
+            print(f"   > Running: {cmd}")
+            try:
+                # Use shell=True to support command chaining (&&)
+                subprocess.run(cmd, shell=True, check=True)
+                print("\n🚀 Pipeline Success: Environment validated and changes committed.")
+            except subprocess.CalledProcessError as e:
+                print(f"\n⛔ PIPELINE FAILURE (Exit Code {e.returncode})")
+                print("   The environment failed validation tests.")
+                print("   Changes were unpacked but NOT committed to git.")
+                sys.exit(e.returncode)
+
+if __name__ == "__main__":
+    extract_payload()
